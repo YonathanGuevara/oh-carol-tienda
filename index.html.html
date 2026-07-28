@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Oh Carol · Indumentaria femenina</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --beige:#F5F1E8; --beige-2:#EAE4D6; --ink:#1A1A1A; --muted:#6B6455;
+    --line:#DCD5C4; --white:#FFFFFF; --danger:#8A3D3D; --ok:#3a6b34;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--beige); color:var(--ink); }
+  header{ text-align:center; padding:24px 16px 16px; }
+  .logo{ width:64px;height:64px;border-radius:50%; background:var(--white);border:1.5px solid var(--ink);
+    display:flex;align-items:center;justify-content:center; margin:0 auto 8px; overflow:hidden; }
+  .logo img{width:100%;height:100%;object-fit:cover;}
+  header p{ margin:0;font-size:11px;letter-spacing:2px;color:var(--muted); text-transform:uppercase; }
+  nav{ display:flex;justify-content:center;gap:8px;padding:0 16px 16px; position:sticky; top:0; background:var(--beige); z-index:40; }
+  nav button{ border:1px solid var(--ink);background:transparent;color:var(--ink);
+    padding:10px 20px;border-radius:20px;font-size:14px;cursor:pointer; min-height:44px; }
+  nav button.active{background:var(--ink);color:var(--white);}
+  main{max-width:720px;margin:0 auto;padding:0 16px 40px;position:relative;}
+  .view{display:none;} .view.active{display:block;}
+
+  .promos{ display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;margin-bottom:20px; }
+  .promo{ background:var(--white);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;font-size:12px;text-align:center;color:var(--ink); }
+  .promo b{display:block;font-size:13px;margin-bottom:2px;}
+
+  .club-banner{ background:var(--ink);color:var(--white);border-radius:12px; padding:16px;margin-bottom:20px;text-align:center;cursor:pointer; }
+  .club-banner b{display:block;font-size:14px;margin-bottom:3px;} .club-banner p{margin:0;font-size:12px;color:#D8C9AE;}
+  .club-detalle{display:none;margin-top:12px;text-align:left;} .club-detalle.open{display:block;}
+  .club-detalle p{color:#EAE4D6;font-size:12px;margin:0 0 12px;}
+  .club-detalle a{ display:block;text-align:center;background:var(--white);color:var(--ink);
+    padding:12px;border-radius:8px;font-size:14px;text-decoration:none;font-weight:600;min-height:44px; }
+
+  .voucher-banner{ background:var(--white);border:1px dashed var(--ink);border-radius:12px;
+    padding:14px 16px;margin-bottom:20px;display:flex;justify-content:space-between;
+    align-items:center;gap:10px;cursor:pointer;min-height:44px; }
+  .voucher-banner b{display:block;font-size:13px;} .voucher-banner span{font-size:11px;color:var(--muted);} .voucher-banner .go{font-size:20px;}
+
+  .carrusel{ position:relative;border-radius:12px;overflow:hidden;margin-bottom:20px; aspect-ratio:4/5;background:var(--beige-2);cursor:pointer; }
+  .carrusel .slide{ position:absolute;inset:0;display:none; } .carrusel .slide.active{display:block;}
+  .carrusel .slide img{width:100%;height:100%;object-fit:cover;}
+  .carrusel .slide .cap{ position:absolute;left:0;right:0;bottom:0; background:linear-gradient(transparent,rgba(0,0,0,0.65));
+    color:#fff;padding:24px 16px 12px;font-size:13px; }
+  .carrusel .slide .cap b{display:block;font-size:15px;}
+  .carrusel .arrow{ position:absolute;top:50%;transform:translateY(-50%); background:rgba(255,255,255,0.9);border:none;border-radius:50%;
+    width:38px;height:38px;font-size:16px;cursor:pointer;z-index:2; }
+  .carrusel .arrow.left{left:8px;} .carrusel .arrow.right{right:8px;}
+  .carrusel .dots{ position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center; gap:6px;z-index:2; }
+  .carrusel .dots span{ width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.6); } .carrusel .dots span.active{background:#fff;}
+
+  .buscador-wrap{position:relative;margin-bottom:12px;}
+  .buscador-wrap input{ width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:24px; font-size:16px;background:var(--white); }
+  .sugerencias{ position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;z-index:10; display:none; }
+  .sugerencias div{padding:12px 14px;font-size:14px;cursor:pointer;} .sugerencias div:hover{background:var(--beige-2);}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .chip{ border:1px solid var(--line);background:var(--white);color:var(--ink);
+    padding:8px 14px;border-radius:16px;font-size:13px;cursor:pointer;min-height:40px; }
+  .chip.active{background:var(--ink);color:var(--white);border-color:var(--ink);}
+
+  .colores-filtro{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+  .swatch{ width:26px;height:26px;border-radius:50%;cursor:pointer; border:2px solid var(--white);box-shadow:0 0 0 1px var(--line); }
+  .swatch.active{box-shadow:0 0 0 2px var(--ink);}
+  .swatch-all{ font-size:12px;color:var(--muted);cursor:pointer;padding:5px 10px; border:1px solid var(--line);border-radius:10px; }
+  .swatch-all.active{background:var(--ink);color:var(--white);border-color:var(--ink);}
+
+  .grid{ display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;margin-bottom:24px; }
+  .card{ background:var(--white);border-radius:10px;overflow:hidden;position:relative; }
+  .card .thumb{ background:var(--beige-2);aspect-ratio:4/5; display:flex;align-items:center;justify-content:center;
+    overflow:hidden;position:relative; }
+  .card .thumb img{width:100%;height:100%;object-fit:cover;}
+  .card .badge{ position:absolute;top:8px;left:8px;font-size:10px;font-weight:600; padding:3px 8px;border-radius:10px;color:#fff;letter-spacing:0.3px; }
+  .card .badge.oferta{background:var(--danger);} .card .badge.liq{background:var(--ink);}
+  .card .body{padding:10px 12px;} .card .nombre{font-size:13px;font-weight:600;margin:0 0 2px;}
+  .card .meta{font-size:12px;color:var(--muted);margin:0 0 4px;}
+  .card .precio-desc{color:var(--danger);font-weight:600;} .card .precio-tachado{text-decoration:line-through;color:var(--muted);font-size:11px;margin-right:4px;}
+  .card .dots-color{display:flex;gap:4px;margin-bottom:8px;} .card .dots-color span{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 1px var(--line);}
+  .card button{ width:100%;font-size:13px;padding:11px;border-radius:6px;border:none; background:var(--ink);color:var(--white);cursor:pointer;min-height:44px; }
+  .card.vendido{opacity:0.5;} .card.vendido button{background:var(--line);color:var(--muted);cursor:not-allowed;}
+  .card.resaltada{animation:flash 1s ease 2;}
+  @keyframes flash{ 0%,100%{box-shadow:none;} 50%{box-shadow:0 0 0 3px var(--ink);} }
+  .empty{ text-align:center;color:var(--muted);font-size:13px;padding:40px 10px; }
+
+  footer{ max-width:720px;margin:0 auto;padding:20px 16px 60px; border-top:1px solid var(--line); }
+  footer h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px;text-align:center;}
+  .contacto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .contacto-item{ background:var(--white);border-radius:10px;padding:14px;font-size:12px;
+    text-align:center;text-decoration:none;color:var(--ink);min-height:44px; }
+  .contacto-item b{display:block;font-size:13px;margin-bottom:3px;} .contacto-item span{color:var(--muted);}
+
+  .cart-fab{ position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;
+    background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;
+    font-size:22px;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,0.25); }
+  .cart-fab .badge-count{ position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;
+    font-size:11px;border-radius:50%;width:20px;height:20px; display:flex;align-items:center;justify-content:center; }
+  .overlay{ position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none; align-items:flex-end;justify-content:center;z-index:60; }
+  .overlay.open{display:flex;}
+  .panel{ background:var(--white);border-radius:16px 16px 0 0;padding:18px; width:100%;max-width:480px;max-height:88vh;overflow-y:auto; }
+  .panel .close-x{float:right;cursor:pointer;font-size:20px;color:var(--muted);padding:4px;}
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 10px;}
+  .cart-item{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;}
+  .cart-item .rm{color:var(--danger);cursor:pointer;margin-left:8px;padding:4px;}
+  .method{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
+  .method button{ flex:1;min-width:100px;font-size:13px;padding:11px;border-radius:6px;
+    border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;min-height:44px; }
+  .method button.active{background:var(--beige-2);border-color:var(--ink);}
+  .total-row{ display:flex;justify-content:space-between;font-size:16px;font-weight:600;
+    border-top:1px solid var(--line);padding-top:10px;margin:6px 0 14px; }
+  .wa-btn{ width:100%;padding:14px;border:none;border-radius:8px; background:var(--ink);color:var(--white);font-size:14px;cursor:pointer;min-height:48px; }
+
+  .panel .field{margin-bottom:12px;} .panel .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .panel .field input, .panel .field select{ width:100%;padding:11px 10px;border:1px solid var(--line);border-radius:6px;
+    font-size:15px;font-family:inherit;background:var(--beige); }
+  .panel .nota{font-size:12px;color:var(--muted);margin:0 0 14px;} .divider{border-top:1px dashed var(--line);margin:18px 0;}
+
+  .admin-form{ background:var(--white);border-radius:12px;padding:18px;margin-bottom:20px; }
+  .admin-form h3{font-size:15px;margin:0 0 14px;}
+  .field{margin-bottom:12px;} .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .field input, .field textarea{ width:100%;padding:11px 10px;border:1px solid var(--line);border-radius:6px;
+    font-size:15px;font-family:inherit;background:var(--beige); }
+  .field textarea{resize:vertical;min-height:60px;}
+  .row2{display:flex;gap:10px;flex-wrap:wrap;} .row2 .field{flex:1;min-width:130px;}
+  .thumbs-preview{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;} .thumbs-preview img{width:64px;height:64px;object-fit:cover;border-radius:6px;}
+  .colores-form{display:flex;gap:10px;flex-wrap:wrap;}
+  .checks{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;align-items:center;} .checks label{display:flex;align-items:center;gap:6px;color:var(--ink);}
+  .pct-input{width:80px;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:13px;}
+  .save-btn{ background:var(--ink);color:var(--white);border:none;padding:13px 20px; border-radius:6px;font-size:14px;cursor:pointer;min-height:48px; }
+  .cancel-btn{ background:transparent;color:var(--muted);border:1px solid var(--line);
+    padding:13px 20px;border-radius:6px;font-size:14px;cursor:pointer;margin-left:8px;min-height:48px; }
+  .admin-row{ background:var(--white);border-radius:8px;padding:12px 14px;
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px; }
+  .admin-row .info{display:flex;align-items:center;gap:10px;} .admin-row .info img{width:40px;height:40px;object-fit:cover;border-radius:6px;}
+  .admin-row .name{font-size:13px;} .admin-row .name small{display:block;color:var(--muted);font-size:11px;}
+  .admin-row .actions i{cursor:pointer;margin-left:12px;font-style:normal;font-size:18px;padding:6px;}
+  .toggle-disp{ font-size:12px;padding:5px 10px;border-radius:10px;cursor:pointer;border:1px solid var(--line); }
+  .toggle-disp.on{background:#E5EFE3;color:var(--ok);border-color:var(--ok);} .toggle-disp.off{background:#F3E4E4;color:var(--danger);border-color:var(--danger);}
+  .config-note{ font-size:12px;color:var(--muted);background:var(--beige-2); border-radius:8px;padding:12px 14px;margin-bottom:20px; }
+  .section-title{font-size:15px;margin:26px 0 12px;font-weight:600;}
+  .loading{ text-align:center;color:var(--muted);font-size:13px;padding:20px; }
+
+  @media (max-width:480px){
+    .row2{flex-direction:column;}
+    .method button{min-width:auto;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><img id="logo-img" alt="Oh Carol" /></div>
+  <p>Indumentaria femenina</p>
+</header>
+
+<div id="gestionar-fab" title="Acceso interno" style="position:fixed;top:10px;right:10px;width:30px;height:30px;
+  border-radius:50%;background:rgba(26,26,26,0.15);display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;z-index:45;color:var(--muted);">⚙</div>
+
+<main>
+
+  <div id="view-tienda" class="view active">
+
+    <div class="promos">
+      <div class="promo"><b>3 cuotas</b>sin interés con cualquier tarjeta</div>
+      <div class="promo"><b>Hasta 4 cuotas</b>sin interés con Paquete Pampa</div>
+      <div class="promo"><b>20% OFF</b>pagando en efectivo o transferencia</div>
+    </div>
+
+    <div class="club-banner" id="club-banner">
+      <b>💛 Unite al Club Oh Carol</b>
+      <p>Tocá para ver más</p>
+      <div class="club-detalle" id="club-detalle">
+        <p>¿Querés ser parte de los descuentos especiales? Sumate a nuestra comunidad de clientas y enterate primero de las novedades, liquidaciones y promos exclusivas.</p>
+        <a href="https://whatsapp.com/channel/0029Vb8KEDa8F2pADor6wq25" target="_blank" rel="noopener">Unirme al canal de WhatsApp</a>
+      </div>
+    </div>
+
+    <div class="voucher-banner" id="voucher-banner">
+      <div><b>🎁 Regalá un voucher</b><span>Elegí el monto y sorprendé a alguien</span></div>
+      <div class="go">›</div>
+    </div>
+
+    <div id="carrusel-cont"></div>
+
+    <div class="buscador-wrap">
+      <input type="text" id="buscador" placeholder="Buscar producto..." autocomplete="off" />
+      <div id="sugerencias" class="sugerencias"></div>
+    </div>
+
+    <div class="chips" id="chips-modo">
+      <div class="chip active" data-modo="todos">Todos</div>
+      <div class="chip" data-modo="masVisto">Más visto</div>
+      <div class="chip" data-modo="descuento">En descuento</div>
+      <div class="chip" data-modo="liquidacion">Liquidación</div>
+      <div class="chip" data-modo="precioAsc">Precio: menor a mayor</div>
+      <div class="chip" data-modo="precioDesc">Precio: mayor a menor</div>
+    </div>
+
+    <div class="colores-filtro" id="colores-filtro"></div>
+
+    <div id="grid" class="grid"><div class="loading">Cargando productos...</div></div>
+  </div>
+
+  <div id="view-admin" class="view">
+
+    <div id="admin-login">
+      <div class="admin-form" style="max-width:360px;margin:20px auto;">
+        <span style="font-size:13px;color:var(--muted);cursor:pointer;" id="volver-tienda-login">‹ Volver a la tienda</span>
+        <h3 style="margin-top:14px;">Ingresar</h3>
+        <div class="field"><label>Email</label><input type="email" id="login-email" autocomplete="username" /></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="login-pass" autocomplete="current-password" /></div>
+        <button class="save-btn" id="login-btn" style="width:100%;">Ingresar</button>
+        <div id="login-error" style="color:var(--danger);font-size:12px;margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div id="admin-content" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:13px;color:var(--muted);cursor:pointer;" id="volver-tienda">‹ Volver a la tienda</span>
+      <span class="toggle-disp off" id="logout-btn" style="cursor:pointer;">Cerrar sesión</span>
+    </div>
+    <div class="config-note">
+      Antes de publicar el banner de "Paquete Pampa", confirmá que el local ya está adherido a la promoción "Préstamo Tarjeta" del Banco de La Pampa.
+    </div>
+
+    <div class="admin-form">
+      <h3 id="form-title">Cargar producto nuevo</h3>
+      <div class="field"><label>Nombre</label><input type="text" id="f-nombre" placeholder="Remera oversize" /></div>
+      <div class="row2">
+        <div class="field"><label>Talle</label><input type="text" id="f-talle" placeholder="M" /></div>
+        <div class="field"><label>Precio</label><input type="number" id="f-precio" placeholder="20000" /></div>
+      </div>
+      <div class="field"><label>Descripción</label><textarea id="f-desc" placeholder="Tela liviana, ideal para verano"></textarea></div>
+      <div class="field">
+        <label>Fotos (hasta 3)</label>
+        <input type="file" id="f-fotos" accept="image/*" multiple />
+        <div class="thumbs-preview" id="f-preview"></div>
+        <div id="f-upload-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+      </div>
+      <div class="field"><label>Color/es</label><div class="colores-form" id="colores-form"></div></div>
+      <div class="field">
+        <div class="checks">
+          <label><input type="checkbox" id="f-destacado" /> Destacado (carrusel)</label>
+          <label><input type="checkbox" id="f-liquidacion" /> Liquidación</label>
+          <label><input type="checkbox" id="f-endescuento" /> En descuento</label>
+          <span id="pct-wrap" style="display:none;"><input type="number" id="f-pct" class="pct-input" placeholder="% off" /></span>
+        </div>
+      </div>
+      <button class="save-btn" id="f-guardar">Publicar</button>
+      <button class="cancel-btn" id="f-cancelar" style="display:none;">Cancelar edición</button>
+    </div>
+
+    <div id="admin-list"><div class="loading">Cargando...</div></div>
+
+    <div class="section-title">Vouchers</div>
+    <div class="config-note">
+      Un voucher solo se genera acá, después de confirmar el pago real. El código es el único que va a funcionar para descargar en la tienda.
+    </div>
+    <div class="admin-form">
+      <div class="row2">
+        <div class="field"><label>De (quién regala)</label><input type="text" id="v-de" placeholder="María" /></div>
+        <div class="field"><label>Para (quién recibe)</label><input type="text" id="v-para" placeholder="Juli" /></div>
+      </div>
+      <div class="field"><label>Monto</label><input type="number" id="v-monto" placeholder="15000" /></div>
+      <button class="save-btn" id="v-generar">Generar voucher (ya confirmé el pago)</button>
+    </div>
+    <div id="voucher-list"><div class="loading">Cargando...</div></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <h4>Contacto</h4>
+  <div class="contacto-grid">
+    <a class="contacto-item" id="footer-whatsapp" href="#" target="_blank" rel="noopener"><b>💬 WhatsApp</b><span>Escribinos directo</span></a>
+    <a class="contacto-item" id="footer-maps" href="#" target="_blank" rel="noopener"><b>📍 San Martín 170</b><span>Santa Rosa, La Pampa</span></a>
+    <a class="contacto-item" href="https://www.instagram.com/ohcarolindumentariafemenina" target="_blank" rel="noopener"><b>📷 Instagram</b><span>@ohcarolindumentariafemenina</span></a>
+  </div>
+</footer>
+
+<div class="cart-fab" id="cart-fab">🛍<span class="badge-count" id="cart-count" style="display:none;">0</span></div>
+
+<div class="overlay" id="cart-overlay">
+  <div class="panel">
+    <span class="close-x" id="cart-close">✕</span>
+    <h3>Tu pedido</h3>
+    <div id="cart-items"></div>
+    <div id="cart-empty" class="empty" style="display:none;padding:16px 0;">Todavía no agregaste nada</div>
+    <div id="cart-summary" style="display:none;">
+      <div class="method">
+        <button id="btn-transfer" data-m="transfer">Transferencia (-20%)</button>
+        <button id="btn-efectivo" data-m="efectivo">Efectivo (-20%)</button>
+        <button id="btn-tarjeta" data-m="tarjeta">Tarjeta</button>
+      </div>
+      <div class="field" id="banco-wrap" style="display:none;">
+        <label>¿Con qué banco es la tarjeta?</label>
+        <select id="banco-select"><option value="">Elegí un banco...</option></select>
+      </div>
+      <div class="total-row"><span>Total</span><span id="total">$0</span></div>
+      <button class="wa-btn" id="confirmar-wa">Confirmar pedido por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="voucher-overlay">
+  <div class="panel">
+    <span class="close-x" id="voucher-close">✕</span>
+    <h3>Regalá un voucher</h3>
+    <p class="nota">Elegí el monto que querés regalar. Una vez que confirmemos el pago, te vamos a pasar un código único para ver y descargar tu voucher acá mismo.</p>
+    <div class="field"><label>Tu nombre</label><input type="text" id="vp-de" placeholder="María" /></div>
+    <div class="field"><label>Para quién es</label><input type="text" id="vp-para" placeholder="Juli" /></div>
+    <div class="field"><label>Monto a regalar</label><input type="number" id="vp-monto" placeholder="15000" /></div>
+    <button class="wa-btn" id="vp-solicitar">Solicitar por WhatsApp</button>
+    <div class="divider"></div>
+    <h3>¿Ya tenés tu código?</h3>
+    <div class="field"><label>Código del voucher</label><input type="text" id="vp-codigo" placeholder="AB23CD" /></div>
+    <button class="save-btn" id="vp-descargar" style="width:100%;">Buscar voucher</button>
+  </div>
+</div>
+
+<div class="overlay" id="voucher-preview-overlay">
+  <div class="panel" style="text-align:center;">
+    <span class="close-x" id="voucher-preview-close">✕</span>
+    <h3>Tu voucher</h3>
+    <img id="voucher-preview-img" style="width:100%;border-radius:10px;margin-bottom:14px;" />
+    <a id="voucher-preview-link" class="wa-btn" style="display:block;text-decoration:none;box-sizing:border-box;">Descargar imagen</a>
+    <p class="nota" style="margin-top:10px;">Si no se descarga sola, mantené presionada la imagen y elegí "Guardar imagen".</p>
+  </div>
+</div>
+
+<script>
+/* ======= CONFIGURACIÓN ======= */
+const WHATSAPP_NUMBER = "5492954840574";
+const SUPABASE_URL = "https://fpotirhvxtgwgtddodcy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_U4lHqKd3gTkOsBJ1WQzGLA_hNXzsymG";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DIRECCION = "San Martín 170, Santa Rosa, La Pampa";
+const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(DIRECCION + ", Oh Carol Indumentaria");
+document.getElementById("footer-whatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
+document.getElementById("footer-maps").href = MAPS_URL;
+
+// Logo: reemplazar este src por la URL pública del logo subido a Supabase Storage
+document.getElementById("logo-img").src = `${SUPABASE_URL}/storage/v1/object/public/productos-fotos/logo-oh-carol.jpg`;
+
+const PALETA = [
+  {key:"negro", label:"Negro", hex:"#1A1A1A"}, {key:"blanco", label:"Blanco", hex:"#FFFFFF"},
+  {key:"beige", label:"Beige", hex:"#D8C9AE"}, {key:"marron", label:"Marrón", hex:"#6B4226"},
+  {key:"verde", label:"Verde", hex:"#4B5842"}, {key:"bordo", label:"Bordó", hex:"#7B2D26"},
+  {key:"gris", label:"Gris", hex:"#8C8C8C"}, {key:"rosa", label:"Rosa", hex:"#D8A7B1"},
+  {key:"azul", label:"Azul", hex:"#35506B"},
+];
+
+const BANCOS = [
+  {nombre:"Banco de la Pampa", procesador:"Fiserv"}, {nombre:"Banco Nación", procesador:"Getnet"},
+  {nombre:"Banco Provincia", procesador:"Getnet"}, {nombre:"Banco Galicia", procesador:"Getnet"},
+  {nombre:"Santander", procesador:"Getnet"}, {nombre:"BBVA", procesador:"Getnet"},
+  {nombre:"Banco Macro", procesador:"Getnet"}, {nombre:"Banco Ciudad", procesador:"Getnet"},
+  {nombre:"ICBC", procesador:"Getnet"}, {nombre:"Banco Supervielle", procesador:"Getnet"},
+  {nombre:"Banco Credicoop", procesador:"Getnet"}, {nombre:"HSBC", procesador:"Getnet"},
+  {nombre:"Otro banco", procesador:"Getnet"},
+];
+let bancoSeleccionado = "";
+
+/* ======= ESTADO ======= */
+let productos = [];
+let vouchers = [];
+let cart = [];
+let metodoPago = "transfer";
+let editandoId = null;
+let fotosTemp = [];
+let coloresTemp = [];
+let modoActual = "todos";
+let colorFiltro = null;
+let textoBusqueda = "";
+let carruselIdx = 0;
+let carruselTimer = null;
+
+/* ======= CARGA DESDE SUPABASE ======= */
+async function cargarProductos(){
+  const { data, error } = await db.from("productos").select("*").order("created_at", {ascending:false});
+  if(error){ console.error(error); productos = []; }
+  else{ productos = data; }
+  renderTodo();
+}
+
+async function cargarVouchers(){
+  const { data, error } = await db.from("vouchers").select("*").order("created_at", {ascending:false});
+  if(error){ console.error(error); vouchers = []; }
+  else{ vouchers = data; }
+  renderVouchers();
+}
+
+/* ======= UTILIDADES ======= */
+function fmt(n){ return "$" + Math.round(n).toLocaleString("es-AR"); }
+function precioFinal(p){
+  if(p.en_descuento && p.descuento_pct){ return p.precio * (1 - p.descuento_pct/100); }
+  return p.precio;
+}
+function hexDeColor(key){ const c = PALETA.find(c=>c.key===key); return c ? c.hex : "#ccc"; }
+
+async function subirFoto(file){
+  const nombreArchivo = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const { error } = await db.storage.from("productos-fotos").upload(nombreArchivo, file, {
+    contentType: file.type, upsert: false
+  });
+  if(error){ throw error; }
+  const { data } = db.storage.from("productos-fotos").getPublicUrl(nombreArchivo);
+  return data.publicUrl;
+}
+
+function renderTodo(){
+  renderCarrusel(); renderChipsColores(); renderTienda(); renderAdmin(); renderColoresForm();
+}
+
+/* ======= TABS ======= */
+document.getElementById("gestionar-fab").onclick = async ()=>{ switchTab("admin"); await revisarSesion(); };
+document.getElementById("volver-tienda").onclick = ()=> switchTab("tienda");
+document.getElementById("volver-tienda-login").onclick = ()=> switchTab("tienda");
+function switchTab(tab){
+  document.getElementById("view-tienda").classList.toggle("active", tab==="tienda");
+  document.getElementById("view-admin").classList.toggle("active", tab==="admin");
+}
+
+/* ======= AUTENTICACIÓN ======= */
+async function revisarSesion(){
+  const { data } = await db.auth.getSession();
+  const logueado = !!data.session;
+  document.getElementById("admin-login").style.display = logueado ? "none" : "block";
+  document.getElementById("admin-content").style.display = logueado ? "block" : "none";
+}
+document.getElementById("login-btn").onclick = async ()=>{
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-pass").value;
+  const errBox = document.getElementById("login-error");
+  errBox.textContent = "";
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if(error){ errBox.textContent = "Email o contraseña incorrectos."; return; }
+  await revisarSesion();
+};
+document.getElementById("logout-btn").onclick = async ()=>{
+  await db.auth.signOut();
+  await revisarSesion();
+};
+
+/* ======= CLUB / VOUCHER BANNERS ======= */
+document.getElementById("club-banner").onclick = ()=> document.getElementById("club-detalle").classList.toggle("open");
+document.getElementById("voucher-banner").onclick = ()=> document.getElementById("voucher-overlay").classList.add("open");
+document.getElementById("voucher-close").onclick = ()=> document.getElementById("voucher-overlay").classList.remove("open");
+document.getElementById("voucher-overlay").onclick = (e)=>{ if(e.target.id==="voucher-overlay") e.currentTarget.classList.remove("open"); };
+
+document.getElementById("vp-solicitar").onclick = ()=>{
+  const de = document.getElementById("vp-de").value.trim();
+  const para = document.getElementById("vp-para").value.trim();
+  const monto = document.getElementById("vp-monto").value;
+  if(!de || !monto){ alert("Completá al menos tu nombre y el monto."); return; }
+  const msg = `Hola! Quiero comprar un voucher de regalo de Oh Carol.%0ADe: ${de}%0APara: ${para||"-"}%0AMonto: ${fmt(parseFloat(monto))}`;
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+};
+
+document.getElementById("vp-descargar").onclick = async ()=>{
+  const codigo = document.getElementById("vp-codigo").value.trim().toUpperCase();
+  if(!codigo){ alert("Escribí el código del voucher."); return; }
+  const { data, error } = await db.from("vouchers").select("*").eq("codigo", codigo).maybeSingle();
+  if(error || !data){ alert("No encontramos ese código. Verificalo con la tienda."); return; }
+  mostrarVoucher(data);
+};
+document.getElementById("voucher-preview-close").onclick = ()=> document.getElementById("voucher-preview-overlay").classList.remove("open");
+document.getElementById("voucher-preview-overlay").onclick = (e)=>{ if(e.target.id==="voucher-preview-overlay") e.currentTarget.classList.remove("open"); };
+
+/* ======= CARRUSEL ======= */
+function renderCarrusel(){
+  const cont = document.getElementById("carrusel-cont");
+  const destacados = productos.filter(p=>p.destacado && p.disponible);
+  clearInterval(carruselTimer);
+  if(destacados.length === 0){ cont.innerHTML = ""; return; }
+  carruselIdx = 0;
+  cont.innerHTML = `
+    <div class="carrusel" id="carrusel">
+      ${destacados.map((p,i)=>`
+        <div class="slide ${i===0?'active':''}" data-id="${p.id}">
+          <img src="${p.fotos && p.fotos[0] ? p.fotos[0] : ''}" />
+          <div class="cap"><b>${p.nombre}</b>${fmt(precioFinal(p))}</div>
+        </div>`).join("")}
+      ${destacados.length>1 ? `
+        <button class="arrow left" id="car-prev">‹</button>
+        <button class="arrow right" id="car-next">›</button>
+        <div class="dots">${destacados.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join("")}</div>
+      `:""}
+    </div>`;
+  document.getElementById("carrusel").onclick = (e)=>{
+    if(e.target.classList.contains("arrow")) return;
+    const id = destacados[carruselIdx].id;
+    switchTab("tienda"); irAProducto(id);
+  };
+  if(destacados.length>1){
+    document.getElementById("car-prev").onclick = (e)=>{ e.stopPropagation(); moverCarrusel(destacados, -1); };
+    document.getElementById("car-next").onclick = (e)=>{ e.stopPropagation(); moverCarrusel(destacados, 1); };
+    carruselTimer = setInterval(()=> moverCarrusel(destacados, 1), 3000);
+  }
+}
+function moverCarrusel(destacados, dir){
+  carruselIdx = (carruselIdx + dir + destacados.length) % destacados.length;
+  document.querySelectorAll("#carrusel .slide").forEach((s,i)=> s.classList.toggle("active", i===carruselIdx));
+  document.querySelectorAll("#carrusel .dots span").forEach((d,i)=> d.classList.toggle("active", i===carruselIdx));
+}
+function irAProducto(id){
+  setTimeout(()=>{
+    const el = document.getElementById("prod-"+id);
+    if(!el) return;
+    el.scrollIntoView({behavior:"smooth", block:"center"});
+    el.classList.add("resaltada");
+    setTimeout(()=> el.classList.remove("resaltada"), 2000);
+  }, 100);
+}
+
+/* ======= FILTRO DE COLORES ======= */
+function renderChipsColores(){
+  const cont = document.getElementById("colores-filtro");
+  const usados = [...new Set(productos.flatMap(p=>p.colores||[]))];
+  if(usados.length === 0){ cont.innerHTML = ""; return; }
+  cont.innerHTML = `<span class="swatch-all ${colorFiltro===null?'active':''}" id="color-todos">Todos los colores</span>` +
+    usados.map(k=>`<div class="swatch ${colorFiltro===k?'active':''}" style="background:${hexDeColor(k)}" data-color="${k}" title="${k}"></div>`).join("");
+  document.getElementById("color-todos").onclick = ()=>{ colorFiltro = null; renderChipsColores(); renderTienda(); };
+  cont.querySelectorAll(".swatch").forEach(sw=>{
+    sw.onclick = ()=>{ colorFiltro = sw.dataset.color; renderChipsColores(); renderTienda(); };
+  });
+}
+
+/* ======= CHIPS MODO ======= */
+document.querySelectorAll("#chips-modo .chip").forEach(chip=>{
+  chip.onclick = ()=>{
+    modoActual = chip.dataset.modo;
+    document.querySelectorAll("#chips-modo .chip").forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active");
+    renderTienda();
+  };
+});
+
+/* ======= BUSCADOR ======= */
+const buscadorInput = document.getElementById("buscador");
+const sugerenciasBox = document.getElementById("sugerencias");
+buscadorInput.oninput = ()=>{
+  textoBusqueda = buscadorInput.value.trim().toLowerCase();
+  if(textoBusqueda === ""){ sugerenciasBox.style.display = "none"; renderTienda(); return; }
+  const matches = productos.filter(p=>p.nombre.toLowerCase().includes(textoBusqueda)).slice(0,5);
+  if(matches.length === 0){ sugerenciasBox.style.display = "none"; }
+  else{
+    sugerenciasBox.innerHTML = matches.map(p=>`<div data-id="${p.id}">${p.nombre}</div>`).join("");
+    sugerenciasBox.style.display = "block";
+    sugerenciasBox.querySelectorAll("div").forEach(d=>{
+      d.onclick = ()=>{
+        const p = productos.find(x=>x.id===d.dataset.id);
+        buscadorInput.value = p.nombre; textoBusqueda = p.nombre.toLowerCase();
+        sugerenciasBox.style.display = "none"; renderTienda();
+      };
+    });
+  }
+  renderTienda();
+};
+document.addEventListener("click", (e)=>{ if(!e.target.closest(".buscador-wrap")) sugerenciasBox.style.display = "none"; });
+
+/* ======= FILTRO + ORDEN ======= */
+function listaFiltrada(){
+  let lista = [...productos];
+  if(textoBusqueda){ lista = lista.filter(p=>p.nombre.toLowerCase().includes(textoBusqueda)); }
+  if(colorFiltro){ lista = lista.filter(p=> (p.colores||[]).includes(colorFiltro)); }
+  if(modoActual === "descuento"){ lista = lista.filter(p=>p.en_descuento); }
+  else if(modoActual === "liquidacion"){ lista = lista.filter(p=>p.liquidacion); }
+  else if(modoActual === "masVisto"){ lista.sort((a,b)=>(b.vistas||0)-(a.vistas||0)); }
+  else if(modoActual === "precioAsc"){ lista.sort((a,b)=>precioFinal(a)-precioFinal(b)); }
+  else if(modoActual === "precioDesc"){ lista.sort((a,b)=>precioFinal(b)-precioFinal(a)); }
+  return lista;
+}
+
+/* ======= RENDER TIENDA ======= */
+function renderTienda(){
+  const grid = document.getElementById("grid");
+  const lista = listaFiltrada();
+  if(lista.length === 0){
+    grid.innerHTML = '<div class="empty">No encontramos productos con ese filtro.</div>';
+  }else{
+    grid.innerHTML = lista.map(p=>{
+      const foto = p.fotos && p.fotos[0] ? `<img src="${p.fotos[0]}" />` : "";
+      const badge = p.en_descuento ? `<span class="badge oferta">-${p.descuento_pct||0}%</span>`
+                  : p.liquidacion ? `<span class="badge liq">LIQUIDACIÓN</span>` : "";
+      const precioHtml = p.en_descuento
+        ? `<span class="precio-tachado">${fmt(p.precio)}</span><span class="precio-desc">${fmt(precioFinal(p))}</span>`
+        : fmt(p.precio);
+      const dots = (p.colores||[]).map(k=>`<span style="background:${hexDeColor(k)}"></span>`).join("");
+      if(p.disponible){
+        return `<div class="card" id="prod-${p.id}">
+          <div class="thumb" onclick="verProducto('${p.id}')">${foto}${badge}</div>
+          <div class="body">
+            <p class="nombre">${p.nombre}</p>
+            <p class="meta">Talle ${p.talle||''} · ${precioHtml}</p>
+            <div class="dots-color">${dots}</div>
+            <button onclick="agregarAlCarrito('${p.id}')">Agregar</button>
+          </div></div>`;
+      }else{
+        return `<div class="card vendido" id="prod-${p.id}">
+          <div class="thumb">${foto}</div>
+          <div class="body"><p class="nombre">${p.nombre}</p><p class="meta">Vendida</p><button disabled>No disponible</button></div></div>`;
+      }
+    }).join("");
+  }
+  renderCarrito();
+}
+
+async function verProducto(id){
+  const p = productos.find(x=>x.id===id);
+  if(!p) return;
+  p.vistas = (p.vistas||0) + 1;
+  await db.from("productos").update({vistas:p.vistas}).eq("id", id);
+}
+function agregarAlCarrito(id){
+  const existente = cart.find(c=>c.id===id);
+  if(existente){ existente.cantidad++; } else{ cart.push({id, cantidad:1}); }
+  renderCarrito(); abrirCarrito();
+}
+function quitarDelCarrito(id){ cart = cart.filter(c=>c.id!==id); renderCarrito(); }
+
+function renderCarrito(){
+  const cont = document.getElementById("cart-items");
+  const empty = document.getElementById("cart-empty");
+  const summary = document.getElementById("cart-summary");
+  const fab = document.getElementById("cart-count");
+  const totalItems = cart.reduce((a,c)=>a+c.cantidad,0);
+  if(totalItems > 0){ fab.style.display = "flex"; fab.textContent = totalItems; } else{ fab.style.display = "none"; }
+  if(cart.length === 0){ cont.innerHTML = ""; empty.style.display = "block"; summary.style.display = "none"; return; }
+  empty.style.display = "none"; summary.style.display = "block";
+  let subtotal = 0;
+  cont.innerHTML = cart.map(c=>{
+    const p = productos.find(x=>x.id===c.id);
+    if(!p) return "";
+    const pf = precioFinal(p);
+    subtotal += pf * c.cantidad;
+    return `<div class="cart-item"><span>${p.nombre} x${c.cantidad}</span><span>${fmt(pf*c.cantidad)} <span class="rm" onclick="quitarDelCarrito('${c.id}')">✕</span></span></div>`;
+  }).join("");
+  const total = metodoPago === "tarjeta" ? subtotal : subtotal * 0.8;
+  document.getElementById("total").textContent = fmt(total);
+}
+
+function renderBancos(){
+  const sel = document.getElementById("banco-select");
+  if(sel.options.length <= 1){
+    BANCOS.forEach(b=>{ const opt = document.createElement("option"); opt.value = b.nombre; opt.textContent = b.nombre; sel.appendChild(opt); });
+  }
+}
+document.getElementById("banco-select").onchange = (e)=>{ bancoSeleccionado = e.target.value; };
+
+document.querySelectorAll(".method button").forEach(btn=>{
+  btn.onclick = ()=>{
+    metodoPago = btn.dataset.m;
+    document.querySelectorAll(".method button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const bancoWrap = document.getElementById("banco-wrap");
+    if(metodoPago === "tarjeta"){ renderBancos(); bancoWrap.style.display = "block"; }
+    else{ bancoWrap.style.display = "none"; }
+    renderCarrito();
+  };
+});
+document.getElementById("btn-transfer").classList.add("active");
+document.getElementById("cart-fab").onclick = abrirCarrito;
+document.getElementById("cart-close").onclick = ()=> document.getElementById("cart-overlay").classList.remove("open");
+document.getElementById("cart-overlay").onclick = (e)=>{ if(e.target.id==="cart-overlay") e.currentTarget.classList.remove("open"); };
+function abrirCarrito(){ document.getElementById("cart-overlay").classList.add("open"); }
+
+document.getElementById("confirmar-wa").onclick = ()=>{
+  if(cart.length === 0) return;
+  if(metodoPago === "tarjeta" && !bancoSeleccionado){ alert("Elegí con qué banco es la tarjeta antes de confirmar."); return; }
+  let subtotal = 0;
+  let lineas = cart.map(c=>{
+    const p = productos.find(x=>x.id===c.id);
+    if(!p) return "";
+    const pf = precioFinal(p);
+    subtotal += pf * c.cantidad;
+    return `- ${p.nombre} (talle ${p.talle||''}) x${c.cantidad}: ${fmt(pf*c.cantidad)}`;
+  }).join("%0A");
+  const total = metodoPago === "tarjeta" ? subtotal : subtotal * 0.8;
+  const metodoTexto = metodoPago === "transfer" ? "Transferencia" : metodoPago === "efectivo" ? "Efectivo" : "Tarjeta";
+  let extraPago = "";
+  if(metodoPago === "tarjeta"){
+    const banco = BANCOS.find(b=>b.nombre===bancoSeleccionado);
+    extraPago = ` (${bancoSeleccionado} → link con ${banco ? banco.procesador : "Getnet"})`;
+  }
+  const mensaje = `Hola! Quiero hacer este pedido de Oh Carol:%0A${lineas}%0A%0AForma de pago: ${metodoTexto}${extraPago}%0ATotal: ${fmt(total)}`;
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${mensaje}`, "_blank");
+};
+
+/* ======= COLORES EN FORMULARIO ADMIN ======= */
+function renderColoresForm(){
+  const cont = document.getElementById("colores-form");
+  cont.innerHTML = PALETA.map(c=>`<div class="swatch ${coloresTemp.includes(c.key)?'active':''}" style="background:${c.hex}" data-color="${c.key}" title="${c.label}"></div>`).join("");
+  cont.querySelectorAll(".swatch").forEach(sw=>{
+    sw.onclick = ()=>{
+      const k = sw.dataset.color;
+      if(coloresTemp.includes(k)){ coloresTemp = coloresTemp.filter(x=>x!==k); } else{ coloresTemp.push(k); }
+      renderColoresForm();
+    };
+  });
+}
+document.getElementById("f-endescuento").onchange = (e)=>{ document.getElementById("pct-wrap").style.display = e.target.checked ? "inline-block" : "none"; };
+
+/* ======= RENDER ADMIN ======= */
+function renderAdmin(){
+  const cont = document.getElementById("admin-list");
+  if(productos.length === 0){ cont.innerHTML = '<div class="empty">Todavía no cargaste productos.</div>'; return; }
+  cont.innerHTML = productos.map(p=>{
+    const foto = p.fotos && p.fotos[0] ? `<img src="${p.fotos[0]}" />` : "";
+    const tags = [ p.destacado?"Destacado":"", p.liquidacion?"Liquidación":"", p.en_descuento?`-${p.descuento_pct||0}%`:"" ].filter(Boolean).join(" · ");
+    return `<div class="admin-row">
+      <div class="info">${foto}<div class="name">${p.nombre} — ${fmt(p.precio)}<small>Talle ${p.talle||''}${tags?" · "+tags:""} · ${p.vistas||0} vistas</small></div></div>
+      <div class="actions" style="display:flex;align-items:center;gap:10px;">
+        <span class="toggle-disp ${p.disponible?'on':'off'}" onclick="toggleDisponible('${p.id}')">${p.disponible?'Disponible':'Vendida'}</span>
+        <i onclick="editarProducto('${p.id}')" title="Editar">✎</i>
+        <i onclick="borrarProducto('${p.id}')" title="Borrar" style="color:var(--danger);">🗑</i>
+      </div></div>`;
+  }).join("");
+}
+
+async function toggleDisponible(id){
+  const p = productos.find(x=>x.id===id);
+  if(!p) return;
+  p.disponible = !p.disponible;
+  await db.from("productos").update({disponible:p.disponible}).eq("id", id);
+  renderAdmin(); renderTienda(); renderCarrusel();
+}
+async function borrarProducto(id){
+  if(!confirm("¿Borrar este producto?")) return;
+  await db.from("productos").delete().eq("id", id);
+  productos = productos.filter(x=>x.id!==id);
+  renderTodo();
+}
+function editarProducto(id){
+  const p = productos.find(x=>x.id===id);
+  if(!p) return;
+  editandoId = id;
+  document.getElementById("f-nombre").value = p.nombre;
+  document.getElementById("f-talle").value = p.talle || "";
+  document.getElementById("f-precio").value = p.precio;
+  document.getElementById("f-desc").value = p.descripcion || "";
+  document.getElementById("f-destacado").checked = !!p.destacado;
+  document.getElementById("f-liquidacion").checked = !!p.liquidacion;
+  document.getElementById("f-endescuento").checked = !!p.en_descuento;
+  document.getElementById("f-pct").value = p.descuento_pct || "";
+  document.getElementById("pct-wrap").style.display = p.en_descuento ? "inline-block" : "none";
+  fotosTemp = p.fotos ? [...p.fotos] : [];
+  coloresTemp = p.colores ? [...p.colores] : [];
+  renderPreview(); renderColoresForm();
+  document.getElementById("form-title").textContent = "Editar producto";
+  document.getElementById("f-guardar").textContent = "Guardar cambios";
+  document.getElementById("f-cancelar").style.display = "inline-block";
+  switchTab("admin");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+document.getElementById("f-cancelar").onclick = resetForm;
+function resetForm(){
+  editandoId = null; fotosTemp = []; coloresTemp = [];
+  document.getElementById("f-nombre").value = ""; document.getElementById("f-talle").value = "";
+  document.getElementById("f-precio").value = ""; document.getElementById("f-desc").value = "";
+  document.getElementById("f-fotos").value = ""; document.getElementById("f-preview").innerHTML = "";
+  document.getElementById("f-upload-status").textContent = "";
+  document.getElementById("f-destacado").checked = false; document.getElementById("f-liquidacion").checked = false;
+  document.getElementById("f-endescuento").checked = false; document.getElementById("f-pct").value = "";
+  document.getElementById("pct-wrap").style.display = "none";
+  document.getElementById("form-title").textContent = "Cargar producto nuevo";
+  document.getElementById("f-guardar").textContent = "Publicar";
+  document.getElementById("f-cancelar").style.display = "none";
+  renderColoresForm();
+}
+
+document.getElementById("f-fotos").onchange = async (e)=>{
+  const files = Array.from(e.target.files).slice(0,3);
+  const status = document.getElementById("f-upload-status");
+  fotosTemp = [];
+  status.textContent = "Subiendo fotos...";
+  try{
+    for(const f of files){
+      const url = await subirFoto(f);
+      fotosTemp.push(url);
+      renderPreview();
+    }
+    status.textContent = "Fotos subidas ✓";
+  }catch(err){
+    status.textContent = "Hubo un error subiendo las fotos: " + err.message;
+  }
+};
+function renderPreview(){ document.getElementById("f-preview").innerHTML = fotosTemp.map(f=>`<img src="${f}" />`).join(""); }
+
+document.getElementById("f-guardar").onclick = async ()=>{
+  const nombre = document.getElementById("f-nombre").value.trim();
+  const talle = document.getElementById("f-talle").value.trim();
+  const precio = parseFloat(document.getElementById("f-precio").value);
+  const descripcion = document.getElementById("f-desc").value.trim();
+  const destacado = document.getElementById("f-destacado").checked;
+  const liquidacion = document.getElementById("f-liquidacion").checked;
+  const en_descuento = document.getElementById("f-endescuento").checked;
+  const descuento_pct = en_descuento ? parseFloat(document.getElementById("f-pct").value) || 0 : 0;
+  if(!nombre || !precio){ alert("Poné al menos el nombre y el precio."); return; }
+
+  const payload = { nombre, talle, precio, descripcion, fotos: fotosTemp, colores: [...coloresTemp],
+    destacado, liquidacion, en_descuento, descuento_pct };
+
+  if(editandoId){
+    const { error } = await db.from("productos").update(payload).eq("id", editandoId);
+    if(error){ alert("Error al guardar: " + error.message); return; }
+  }else{
+    const { error } = await db.from("productos").insert({...payload, disponible:true, vistas:0});
+    if(error){ alert("Error al publicar: " + error.message); return; }
+  }
+  resetForm();
+  await cargarProductos();
+};
+
+/* ======= VOUCHERS ======= */
+function generarCodigo(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({length:6}, ()=> chars[Math.floor(Math.random()*chars.length)]).join("");
+}
+document.getElementById("v-generar").onclick = async ()=>{
+  const de = document.getElementById("v-de").value.trim();
+  const para = document.getElementById("v-para").value.trim();
+  const monto = parseFloat(document.getElementById("v-monto").value);
+  if(!de || !para || !monto){ alert("Completá De, Para y Monto."); return; }
+  const hoy = new Date();
+  const vence = new Date(hoy.getTime() + 30*24*60*60*1000);
+  let codigo = generarCodigo();
+  const { error } = await db.from("vouchers").insert({
+    codigo, de, para, monto, fecha: hoy.toISOString().slice(0,10), vence: vence.toISOString().slice(0,10), canjeado:false
+  });
+  if(error){ alert("Error al generar el voucher: " + error.message); return; }
+  document.getElementById("v-de").value = ""; document.getElementById("v-para").value = ""; document.getElementById("v-monto").value = "";
+  await cargarVouchers();
+  alert(`Voucher generado. Código: ${codigo}\nPasáselo a la clienta para que lo descargue en la web.`);
+};
+function renderVouchers(){
+  const cont = document.getElementById("voucher-list");
+  if(!cont) return;
+  if(vouchers.length === 0){ cont.innerHTML = '<div class="empty">Todavía no generaste vouchers.</div>'; return; }
+  cont.innerHTML = vouchers.map(v=>`
+    <div class="admin-row">
+      <div class="info"><div class="name">${v.codigo} — ${v.de} → ${v.para} · ${fmt(v.monto)}<small>Vence ${v.vence}</small></div></div>
+      <div class="actions" style="display:flex;align-items:center;gap:10px;">
+        <span class="toggle-disp ${v.canjeado?'off':'on'}" onclick="toggleCanjeado('${v.codigo}')">${v.canjeado?'Canjeado':'Vigente'}</span>
+        <i onclick='mostrarVoucherPorCodigo("${v.codigo}")' title="Ver / descargar">⬇</i>
+        <i onclick="borrarVoucher('${v.codigo}')" title="Borrar" style="color:var(--danger);">🗑</i>
+      </div></div>`).join("");
+}
+async function toggleCanjeado(codigo){
+  const v = vouchers.find(x=>x.codigo===codigo);
+  if(!v) return;
+  v.canjeado = !v.canjeado;
+  await db.from("vouchers").update({canjeado:v.canjeado}).eq("codigo", codigo);
+  renderVouchers();
+}
+async function borrarVoucher(codigo){
+  if(!confirm("¿Borrar este voucher?")) return;
+  await db.from("vouchers").delete().eq("codigo", codigo);
+  vouchers = vouchers.filter(x=>x.codigo!==codigo);
+  renderVouchers();
+}
+function mostrarVoucherPorCodigo(codigo){
+  const v = vouchers.find(x=>x.codigo===codigo);
+  if(v) mostrarVoucher(v);
+}
+
+/* ======= GENERAR IMAGEN DEL VOUCHER ======= */
+function mostrarVoucher(v){
+  const canvas = document.createElement("canvas");
+  canvas.width = 1000; canvas.height = 600;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = "#1A1A1A"; ctx.lineWidth = 3; ctx.strokeRect(20,20,canvas.width-40,canvas.height-40);
+  ctx.fillStyle = "#1A1A1A"; ctx.textAlign = "center"; ctx.font = "italic 64px Georgia, serif";
+  ctx.fillText("Voucher de regalo", canvas.width/2, 140);
+  ctx.textAlign = "left";
+
+  function campo(label, valor, x, y, w){
+    ctx.strokeStyle = "#DCD5C4"; ctx.lineWidth = 1.5;
+    roundRect(ctx, x, y, w, 46, 23); ctx.stroke();
+    ctx.fillStyle = "#1A1A1A"; ctx.font = "16px Arial";
+    ctx.fillText(`${label}: ${valor}`, x+18, y+29);
+  }
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  campo("De", v.de, 70, 220, 420); campo("Para", v.para, 510, 220, 420);
+  campo("Monto", fmt(v.monto), 70, 290, 420); campo("Código", v.codigo, 510, 290, 420);
+  ctx.fillStyle = "#1A1A1A"; ctx.font = "18px Arial";
+  ctx.fillText(`Válido hasta el día ${v.vence}`, 70, 400);
+  ctx.font = "13px Arial"; ctx.fillStyle = "#6B6455";
+  ctx.fillText("Oh Carol Indumentaria · @ohcarolindumentariafemenina", 70, 430);
+
+  const logo = new Image();
+  logo.crossOrigin = "anonymous";
+  logo.onload = ()=>{
+    ctx.save(); ctx.beginPath();
+    ctx.arc(canvas.width-110, canvas.height-100, 65, 0, Math.PI*2); ctx.clip();
+    ctx.drawImage(logo, canvas.width-175, canvas.height-165, 130, 130);
+    ctx.restore(); mostrarResultado();
+  };
+  logo.onerror = mostrarResultado;
+  logo.src = document.getElementById("logo-img").src;
+
+  function mostrarResultado(){
+    const dataUrl = canvas.toDataURL("image/png");
+    document.getElementById("voucher-preview-img").src = dataUrl;
+    const link = document.getElementById("voucher-preview-link");
+    link.href = dataUrl; link.download = `voucher-oh-carol-${v.codigo}.png`;
+    document.getElementById("voucher-preview-overlay").classList.add("open");
+  }
+}
+
+/* ======= INIT ======= */
+cargarProductos();
+cargarVouchers();
+</script>
+</body>
+</html>
